@@ -1,0 +1,10 @@
+[package]
+name = "mouser-hidpp"
+version.workspace = true
+edition.workspace = true
+license.workspace = true
+
+[dependencies]
+hidapi.workspace = true
+mouser-core.workspace = true
+serde_json.workspace = true

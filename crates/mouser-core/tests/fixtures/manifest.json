@@ -1,0 +1,232 @@
+{
+  "edge_active_profile_int": {
+    "python_fell_back": false,
+    "python_log": "[Config] Type mismatch at .active_profile: expected str, got int"
+  },
+  "edge_active_profile_missing": {
+    "python_fell_back": false,
+    "python_log": ""
+  },
+  "edge_apps_non_strings": {
+    "python_fell_back": true,
+    "python_log": "[Config] Error loading config: 'NoneType' object has no attribute 'lower'"
+  },
+  "edge_apps_string": {
+    "python_fell_back": false,
+    "python_log": "[Config] Type mismatch at .profiles.default.apps: expected list, got str"
+  },
+  "edge_big_int": {
+    "python_fell_back": false,
+    "python_log": ""
+  },
+  "edge_bom": {
+    "expected_is_bom_stripped_load": true,
+    "python_fell_back": true,
+    "python_log": "[Config] Error loading config: Unexpected UTF-8 BOM (decode using utf-8-sig): line 1 column 1 (char 0)"
+  },
+  "edge_bom_v09": {
+    "expected_is_bom_stripped_load": true,
+    "python_fell_back": true,
+    "python_log": "[Config] Error loading config: Unexpected UTF-8 BOM (decode using utf-8-sig): line 1 column 1 (char 0)"
+  },
+  "edge_compact_one_line": {
+    "python_fell_back": false,
+    "python_log": ""
+  },
+  "edge_crlf": {
+    "python_fell_back": false,
+    "python_log": ""
+  },
+  "edge_duplicate_keys": {
+    "python_fell_back": false,
+    "python_log": ""
+  },
+  "edge_empty": {
+    "python_fell_back": true,
+    "python_log": "[Config] Error loading config: Expecting value: line 1 column 1 (char 0)"
+  },
+  "edge_empty_object": {
+    "python_fell_back": false,
+    "python_log": ""
+  },
+  "edge_float_forms": {
+    "python_fell_back": false,
+    "python_log": ""
+  },
+  "edge_garbage_text": {
+    "python_fell_back": true,
+    "python_log": "[Config] Error loading config: Expecting value: line 1 column 1 (char 0)"
+  },
+  "edge_invalid_utf8": {
+    "python_fell_back": true,
+    "python_log": "[Config] Error loading config: 'utf-8' codec can't decode byte 0xff in position 22: invalid start byte"
+  },
+  "edge_mappings_null": {
+    "python_fell_back": true,
+    "python_log": "[Config] Error loading config: 'NoneType' object has no attribute 'setdefault'"
+  },
+  "edge_newer_12": {
+    "python_fell_back": false,
+    "python_log": ""
+  },
+  "edge_newer_99_odd_types": {
+    "python_fell_back": false,
+    "python_log": "[Config] Type mismatch at .settings.dpi: expected int, got str"
+  },
+  "edge_null_values": {
+    "python_fell_back": false,
+    "python_log": "[Config] wheel_divert=None is not valid; using 'auto'\n[Config] Type mismatch at .profiles.default.label: expected str, got NoneType\n[Config] Type mismatch at .profiles.default.mappings.middle: expected str, got NoneType\n[Config] Type mismatch at .settings.hscroll_threshold: expected float, got NoneType\n[Config] Type mismatch at .settings.dpi: expected int, got NoneType\n[Config] Type mismatch at .settings.debug_mode: expected bool, got NoneType\n[Config] Type mismatch at .settings.device_layout_overrides: expected dict, got NoneType\n[Config] Type mismatch at .settings.language: expected str, got NoneType\n[Config] Type mismatch at .settings.action_haptic: expected list, got NoneType"
+  },
+  "edge_profile_null": {
+    "python_fell_back": true,
+    "python_log": "[Config] Error loading config: 'NoneType' object has no attribute 'get'"
+  },
+  "edge_profiles_list": {
+    "python_fell_back": true,
+    "python_log": "[Config] Error loading config: 'list' object has no attribute 'values'"
+  },
+  "edge_root_array": {
+    "python_fell_back": true,
+    "python_log": "[Config] Error loading config: 'list' object has no attribute 'get'"
+  },
+  "edge_root_null": {
+    "python_fell_back": true,
+    "python_log": "[Config] Error loading config: 'NoneType' object has no attribute 'get'"
+  },
+  "edge_settings_not_object": {
+    "python_fell_back": true,
+    "python_log": "[Config] Error loading config: 'str' object has no attribute 'setdefault'"
+  },
+  "edge_settings_only_v11": {
+    "python_fell_back": false,
+    "python_log": ""
+  },
+  "edge_trailing_garbage": {
+    "python_fell_back": true,
+    "python_log": "[Config] Error loading config: Extra data: line 99 column 1 (char 2760)"
+  },
+  "edge_truncated": {
+    "python_fell_back": true,
+    "python_log": "[Config] Error loading config: Expecting property name enclosed in double quotes: line 44 column 34 (char 1385)"
+  },
+  "edge_unknown_keys": {
+    "python_fell_back": false,
+    "python_log": ""
+  },
+  "edge_version_bool_false": {
+    "python_fell_back": false,
+    "python_log": ""
+  },
+  "edge_version_bool_true": {
+    "python_fell_back": false,
+    "python_log": ""
+  },
+  "edge_version_float_frac": {
+    "python_fell_back": false,
+    "python_log": ""
+  },
+  "edge_version_float_int": {
+    "python_fell_back": false,
+    "python_log": ""
+  },
+  "edge_version_float_newer_frac": {
+    "python_fell_back": false,
+    "python_log": "[Config] Type mismatch at .version: expected int, got float"
+  },
+  "edge_version_negative": {
+    "python_fell_back": false,
+    "python_log": ""
+  },
+  "edge_version_null": {
+    "python_fell_back": true,
+    "python_log": "[Config] Error loading config: '<' not supported between instances of 'NoneType' and 'int'"
+  },
+  "edge_version_string": {
+    "python_fell_back": true,
+    "python_log": "[Config] Error loading config: '<' not supported between instances of 'str' and 'int'"
+  },
+  "edge_version_zero": {
+    "python_fell_back": false,
+    "python_log": ""
+  },
+  "edge_whitespace_only": {
+    "python_fell_back": true,
+    "python_log": "[Config] Error loading config: Expecting value: line 3 column 1 (char 5)"
+  },
+  "edge_wrong_types_settings": {
+    "python_fell_back": false,
+    "python_log": "[Config] wheel_divert='weird' is not valid; using 'auto'\n[Config] Type mismatch at .settings.start_minimized: expected bool, got str\n[Config] Type mismatch at .settings.dpi: expected int, got str\n[Config] Type mismatch at .settings.smart_shift_threshold: expected int, got float\n[Config] Type mismatch at .settings.gesture_cross_ratio: expected float, got str\n[Config] Type mismatch at .settings.debug_mode: expected bool, got int\n[Config] Type mismatch at .settings.device_layout_overrides: expected dict, got list\n[Config] Type mismatch at .settings.language: expected str, got int\n[Config] Type mismatch at .settings.action_haptic: expected list, got str\n[Config] Type mismatch at .settings.update_check_state: expected dict, got int"
+  },
+  "v00_no_version": {
+    "python_fell_back": false,
+    "python_log": ""
+  },
+  "v01": {
+    "python_fell_back": false,
+    "python_log": ""
+  },
+  "v02": {
+    "python_fell_back": false,
+    "python_log": ""
+  },
+  "v03_legacy_gesture": {
+    "python_fell_back": false,
+    "python_log": ""
+  },
+  "v04": {
+    "python_fell_back": false,
+    "python_log": ""
+  },
+  "v05": {
+    "python_fell_back": false,
+    "python_log": ""
+  },
+  "v06_mode_shift_none": {
+    "python_fell_back": false,
+    "python_log": ""
+  },
+  "v07": {
+    "python_fell_back": false,
+    "python_log": ""
+  },
+  "v08": {
+    "python_fell_back": false,
+    "python_log": ""
+  },
+  "v09_release": {
+    "python_fell_back": false,
+    "python_log": ""
+  },
+  "v09_ring_mode_disabled": {
+    "python_fell_back": false,
+    "python_log": ""
+  },
+  "v09_ring_mode_ring": {
+    "python_fell_back": false,
+    "python_log": ""
+  },
+  "v09_ring_mode_simple": {
+    "python_fell_back": false,
+    "python_log": ""
+  },
+  "v10": {
+    "python_fell_back": false,
+    "python_log": ""
+  },
+  "v11_custom_ring_slots": {
+    "python_fell_back": false,
+    "python_log": ""
+  },
+  "v11_legacy_swipe_no_ring_slots": {
+    "python_fell_back": false,
+    "python_log": ""
+  },
+  "v11_multi_profile_unicode": {
+    "python_fell_back": false,
+    "python_log": ""
+  },
+  "v11_real_defaults": {
+    "python_fell_back": false,
+    "python_log": ""
+  }
+}

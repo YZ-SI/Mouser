@@ -1,0 +1,115 @@
+// Ports ui/qml/Main.qml (window shell, sidebar navigation, toast, error state).
+import { Theme } from "theme.slint";
+import { Txt, Icon, Btn } from "widgets.slint";
+import { Backend } from "backend.slint";
+import { S } from "strings.slint";
+import { MousePage } from "mouse_page.slint";
+import { ScrollPage } from "scroll_page.slint";
+import { HapticPage } from "haptic_page.slint";
+import { RingPage } from "ring_page.slint";
+import { AddAppDialog, DeleteDialog, KeyCaptureDialog, AboutDialog } from "dialogs.slint";
+
+export { Backend, S, Theme }
+
+component NavButton inherits Rectangle {
+    in property <image> icon;
+    in property <bool> active;
+    callback clicked();
+    height: 56px;
+    Rectangle {
+        width: 46px; height: 46px; border-radius: 14px;
+        background: active ? Theme.accent.with-alpha(0.15) : ta.has-hover ? Theme.hover-tint : transparent;
+        Icon { width: 22px; height: 22px; source: icon; tint: active ? Theme.accent : ta.has-hover ? Theme.text-primary : Theme.text-secondary; }
+    }
+    if active: Rectangle { x: 0; width: 3px; height: 24px; y: 16px; border-radius: 2px; background: Theme.accent; }
+    ta := TouchArea { mouse-cursor: pointer; clicked => { root.clicked(); } }
+}
+
+export component MainWindow inherits Window {
+    title: Backend.window-title;
+    icon: @image-url("../assets/images/logo_icon.png");
+    min-width: 920px;
+    min-height: 620px;
+    preferred-width: 1180px;
+    preferred-height: 780px;
+    background: Theme.bg;
+    default-font-family: Theme.font;
+    changed width => { Backend.chips-width-changed(self.width); }
+
+    HorizontalLayout {
+        Rectangle {
+            width: 72px;
+            background: Theme.bg-sidebar;
+            VerticalLayout {
+                padding-top: 20px; padding-bottom: 16px; spacing: 6px;
+                Rectangle {
+                    height: 44px;
+                    Rectangle {
+                        width: 44px; height: 44px; border-radius: 14px; background: #0b1220;
+                        Icon { width: 24px; height: 24px; source: @image-url("../assets/icons/mouse-simple.svg"); tint: #ffffff; }
+                    }
+                }
+                Rectangle { height: 18px; }
+                NavButton { icon: @image-url("../assets/icons/mouse-simple.svg"); active: Backend.page == 0; clicked => { Backend.navigate(0); } }
+                NavButton { icon: @image-url("../assets/icons/sliders-horizontal.svg"); active: Backend.page == 1; clicked => { Backend.navigate(1); } }
+                if Backend.show-haptic: NavButton { icon: @image-url("../assets/icons/circle.svg"); active: Backend.page == 2; clicked => { Backend.navigate(2); } }
+                if Backend.show-ring: NavButton { icon: @image-url("../assets/icons/target.svg"); active: Backend.page == 3; clicked => { Backend.navigate(3); } }
+                Rectangle { }
+                NavButton { icon: @image-url("../assets/icons/info.svg"); active: Backend.about-open; clicked => { Backend.about-open = true; } }
+            }
+        }
+        VerticalLayout {
+            // Agent could not use config.json as-is (corrupt / newer version / unreadable).
+            if Backend.problem-kind != "": Rectangle {
+                background: Theme.danger-bg;
+                height: pb.preferred-height;
+                pb := HorizontalLayout {
+                    padding: 12px; padding-left: 20px; padding-right: 20px; spacing: 12px;
+                    VerticalLayout {
+                        alignment: center; spacing: 2px;
+                        Txt {
+                            text: Backend.problem-kind == "newer_version" ? S.problem-newer-version : Backend.problem-kind == "unreadable" ? S.problem-unreadable : S.problem-corrupt;
+                            font-size: 13px; font-weight: 700; wrap: word-wrap;
+                        }
+                        if Backend.problem-detail != "": Txt { text: Backend.problem-detail; font-size: 11px; color: Theme.text-secondary; wrap: word-wrap; }
+                    }
+                    Btn { text: S.problem-reset; primary: true; y: (parent.height - self.height) / 2; clicked => { Backend.problem-reset(); } }
+                    Btn { text: S.problem-dismiss; y: (parent.height - self.height) / 2; clicked => { Backend.problem-dismiss(); } }
+                }
+            }
+            Rectangle {
+                if Backend.page == 0: MousePage { }
+                if Backend.page == 1: ScrollPage { }
+                if Backend.page == 2 && Backend.show-haptic: HapticPage { }
+                if Backend.page == 3 && Backend.show-ring: RingPage { }
+            }
+        }
+    }
+
+    // agent connection states (new in mouser-rs: the GUI is a client of the agent)
+    if Backend.conn-state != "ok": Rectangle {
+        x: 72px;
+        background: Theme.bg;
+        TouchArea { }
+        VerticalLayout {
+            alignment: center; spacing: 12px; padding: 40px;
+            Txt { text: Backend.conn-state == "error" ? S.app-agent-error : S.app-connecting; font-size: 22px; font-weight: 700; horizontal-alignment: center; }
+            if Backend.conn-state == "error": Txt { text: S.app-agent-error-desc; color: Theme.text-secondary; horizontal-alignment: center; wrap: word-wrap; }
+            if Backend.conn-state == "error" && Backend.conn-error != "": Txt { text: Backend.conn-error; font-size: 11px; color: Theme.text-dim; horizontal-alignment: center; wrap: word-wrap; }
+            if Backend.conn-state == "error": HorizontalLayout { alignment: center; Btn { text: S.app-retry; primary: true; clicked => { Backend.retry(); } } }
+        }
+    }
+
+    if Backend.add-open: AddAppDialog { x: 0; y: 0; width: root.width; height: root.height; }
+    if Backend.delete-open: DeleteDialog { x: 0; y: 0; width: root.width; height: root.height; }
+    if Backend.kc-open: KeyCaptureDialog { x: 0; y: 0; width: root.width; height: root.height; }
+    if Backend.about-open: AboutDialog { x: 0; y: 0; width: root.width; height: root.height; closed => { Backend.about-open = false; } }
+
+    if Backend.toast != "": Rectangle {
+        y: root.height - 62px;
+        x: (root.width - self.width) / 2;
+        width: min(tt.preferred-width + 32px, root.width - 40px);
+        height: 38px; border-radius: 19px; background: Theme.accent;
+        tt := Txt { x: 16px; width: parent.width - 32px; text: Backend.toast; font-size: 12px; font-weight: 700; color: Theme.bg-sidebar; horizontal-alignment: center; vertical-alignment: center; overflow: elide; }
+    }
+}

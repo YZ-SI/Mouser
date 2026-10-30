@@ -1,0 +1,437 @@
+// Ports ui/qml/MousePage.qml (profile list, device view, action picker, gesture editor, DPI
+// presets) and ui/qml/HotspotDot.qml (hotspot dot with annotation label).
+import { ScrollView } from "std-widgets.slint";
+import { Theme } from "theme.slint";
+import { Txt, Icon, Toggle, Chip, ChipRows, Btn, Pill, Dropdown, SliderBar, SectionLabel } from "widgets.slint";
+import { Backend, HotspotItem, ChipRow } from "backend.slint";
+import { S } from "strings.slint";
+
+// HotspotDot.qml: dot over the image + connector line + annotation label.
+component HotspotDot inherits Rectangle {
+    in property <HotspotItem> item;
+    in property <length> cx;
+    in property <length> cy;
+    callback clicked();
+    property <bool> sel: item.selected;
+    property <length> lw: col.preferred-width + 20px;
+    property <length> lh: col.preferred-height + 14px;
+    property <length> left-x: cx + item.ox * 1px - lw - 14px;
+    property <length> right-x: cx + item.ox * 1px + 6px;
+    property <bool> left-fits: left-x >= 8px;
+    property <bool> right-fits: right-x + lw <= root.width - 8px;
+    property <bool> use-left: item.left ? (left-fits || !right-fits) : !(right-fits || !left-fits);
+    property <length> lx: Math.max(8px, Math.min(root.width - lw - 8px, use-left ? left-x : right-x));
+    property <length> ly: Math.max(8px, Math.min(root.height - lh - 8px, cy + item.oy * 1px - 8px));
+    property <length> end-x: cx >= lx + lw / 2 ? lx + lw - 6px : lx + 6px;
+    property <length> end-y: ly + lh / 2;
+
+    Path {
+        x: 0;
+        y: 0;
+        width: root.width;
+        height: root.height;
+        viewbox-width: self.width / 1px;
+        viewbox-height: self.height / 1px;
+        stroke: sel ? Theme.accent : Theme.accent.with-alpha(0.35);
+        stroke-width: 1px;
+        commands: "M \{root.cx / 1px} \{root.cy / 1px} L \{root.end-x / 1px} \{root.end-y / 1px}";
+    }
+    Rectangle {
+        x: end-x - 3px;
+        y: end-y - 3px;
+        width: 6px;
+        height: 6px;
+        border-radius: 3px;
+        background: sel ? Theme.accent : Theme.accent.with-alpha(0.5);
+    }
+    Rectangle {
+        x: cx - 15px;
+        y: cy - 15px;
+        width: 30px;
+        height: 30px;
+        border-radius: 15px;
+        border-width: sel ? 2px : 1px;
+        border-color: sel ? Theme.accent : Theme.accent.with-alpha(0.3);
+        opacity: sel || dot-ta.has-hover ? 1 : 0.6;
+    }
+    Rectangle {
+        x: cx - 8px;
+        y: cy - 8px;
+        width: 16px;
+        height: 16px;
+        border-radius: 8px;
+        background: sel ? Theme.accent-hover : Theme.accent;
+        border-width: 2px;
+        border-color: #0000004d;
+    }
+    dot-ta := TouchArea {
+        x: cx - 18px;
+        y: cy - 18px;
+        width: 36px;
+        height: 36px;
+        mouse-cursor: pointer;
+        clicked => { root.clicked(); }
+    }
+    Rectangle {
+        x: lx;
+        y: ly;
+        width: lw;
+        height: lh;
+        border-radius: 8px;
+        background: sel ? (Theme.dark ? #00d4aa1f : #d1f7edE6) : (Theme.dark ? #00000059 : #ffffffeb);
+        border-width: sel ? 1px : 0px;
+        border-color: Theme.accent.with-alpha(0.3);
+        col := VerticalLayout {
+            x: 10px;
+            alignment: center;
+            spacing: 1px;
+            Txt { text: item.label; font-size: 12px; font-weight: 700; color: sel ? Theme.accent : Theme.text-primary; }
+            if item.sub != "": Txt { text: item.sub; font-size: 10px; color: Theme.text-secondary; max-width: 220px; overflow: elide; }
+        }
+        TouchArea { mouse-cursor: pointer; clicked => { root.clicked(); } }
+    }
+}
+
+component PickerHeader inherits HorizontalLayout {
+    spacing: 12px;
+    Rectangle { width: 6px; border-radius: 3px; background: Theme.accent; }
+    VerticalLayout {
+        spacing: 2px;
+        Txt { text: Backend.sel-title; font-size: 15px; font-weight: 700; }
+        Txt { text: Backend.sel-subtitle; color: Theme.text-secondary; }
+    }
+}
+
+export component MousePage inherits Rectangle {
+    background: Theme.bg;
+    HorizontalLayout {
+        // ---- left panel: profiles
+        Rectangle {
+            width: 248px;
+            background: Theme.bg-card;
+            border-width: 1px;
+            border-color: Theme.border;
+            VerticalLayout {
+                Rectangle {
+                    height: 52px;
+                    Txt { x: 16px; text: S.mouse-profiles; font-size: 14px; font-weight: 700; vertical-alignment: center; }
+                }
+                Rectangle { height: 1px; background: Theme.border; }
+                ScrollView {
+                    VerticalLayout {
+                        for p in Backend.profiles: Rectangle {
+                            height: 58px;
+                            background: p.selected ? Theme.accent.with-alpha(0.08) : pa.has-hover ? Theme.hover-tint : transparent;
+                            Rectangle { x: 6px; y: 15px; width: 3px; height: 28px; border-radius: 2px; background: p.active ? Theme.accent : transparent; }
+                            if p.has-icon: Image { x: 16px; y: 17px; width: 24px; height: 24px; source: p.icon; image-fit: contain; }
+                            if !p.has-icon: Rectangle {
+                                x: 16px; y: 17px; width: 24px; height: 24px; border-radius: 12px; background: Theme.accent-dim;
+                                Txt { text: p.initial; color: Theme.accent; font-weight: 700; horizontal-alignment: center; vertical-alignment: center; }
+                            }
+                            VerticalLayout {
+                                x: 50px;
+                                width: parent.width - 60px;
+                                alignment: center;
+                                spacing: 2px;
+                                Txt { text: p.label; font-size: 12px; font-weight: 700; color: p.selected ? Theme.accent : Theme.text-primary; overflow: elide; }
+                                Txt { text: p.apps != "" ? p.apps : S.mouse-all-applications; font-size: 9px; color: Theme.text-secondary; overflow: elide; }
+                            }
+                            pa := TouchArea { mouse-cursor: pointer; clicked => { Backend.select-profile(p.name); } }
+                        }
+                    }
+                }
+                Rectangle { height: 1px; background: Theme.border; }
+                Rectangle {
+                    height: 88px;
+                    Rectangle {
+                        x: 8px; y: 10px; width: parent.width - 16px; height: parent.height - 20px;
+                        border-radius: 14px; background: Theme.bg-subtle; border-width: 1px; border-color: Theme.border;
+                        Rectangle {
+                            x: 12px; y: (parent.height - 30px) / 2; width: 30px; height: 30px; border-radius: 10px; background: Theme.accent.with-alpha(0.15);
+                            Txt { text: "+"; font-size: 16px; font-weight: 700; color: Theme.accent; horizontal-alignment: center; vertical-alignment: center; }
+                        }
+                        VerticalLayout {
+                            x: 52px; width: parent.width - 62px; alignment: center; spacing: 2px;
+                            Txt { text: S.mouse-add-app-profile; font-size: 11px; font-weight: 700; }
+                            Txt { text: S.mouse-search-installed-apps; font-size: 9px; color: Theme.text-secondary; overflow: elide; }
+                        }
+                        TouchArea { mouse-cursor: pointer; clicked => { Backend.open-add-app(); } }
+                    }
+                }
+            }
+        }
+
+        // ---- right panel
+        ScrollView {
+            VerticalLayout {
+                width: parent.width;
+                // header
+                Rectangle {
+                    height: 70px;
+                    VerticalLayout {
+                        x: 28px;
+                        alignment: center;
+                        spacing: 3px;
+                        HorizontalLayout {
+                            spacing: 8px;
+                            alignment: start;
+                            Txt { text: Backend.device-name; font-size: 20px; font-weight: 700; vertical-alignment: center; }
+                            if Backend.sel-profile-label != "": Pill {
+                                text: Backend.sel-profile-label; tint: Theme.accent; fill: Theme.accent.with-alpha(0.12); height: 22px;
+                            }
+                        }
+                        Txt {
+                            text: !Backend.connected ? S.mouse-turn-on-mouse : Backend.has-layout ? S.mouse-click-dot : S.mouse-choose-layout;
+                            color: Theme.text-secondary;
+                        }
+                    }
+                    HorizontalLayout {
+                        x: parent.width - self.preferred-width - 28px;
+                        y: (parent.height - 28px) / 2;
+                        height: 28px;
+                        spacing: 8px;
+                        if !Backend.sel-is-default && Backend.sel-profile != "": Btn {
+                            text: S.mouse-delete-profile; danger: true; height: 28px;
+                            clicked => { Backend.delete-profile-request(); }
+                        }
+                        if Backend.battery >= 0: Pill {
+                            y: 2px;
+                            text: Backend.battery + "%";
+                            tint: Backend.battery <= 20 ? #e05555 : Backend.battery <= 40 ? #e09045 : Theme.accent;
+                            fill: Backend.battery <= 20 ? #e0333330 : Backend.battery <= 40 ? #e68f1a2e : Theme.accent.with-alpha(0.14);
+                            has-icon: true;
+                            icon: Backend.charging ? @image-url("../assets/icons/battery-charging.svg") : @image-url("../assets/icons/battery-high.svg");
+                        }
+                        Pill {
+                            y: 2px;
+                            text: Backend.connected ? S.mouse-connected : S.mouse-not-connected;
+                            tint: Backend.connected ? Theme.accent : Theme.offline;
+                            fill: Backend.connected ? Theme.accent.with-alpha(0.12) : #e64d4d26;
+                            dot: true;
+                        }
+                        if Backend.connected: Pill {
+                            y: 2px;
+                            text: Backend.layout-pill; chevron: true;
+                            tint: Backend.layout-overridden ? #d4a017 : Theme.text-secondary;
+                            fill: Backend.layout-overridden ? #f2b33320 : #80808019;
+                            clicked => { layout-popup.show(); }
+                        }
+                    }
+                    layout-popup := PopupWindow {
+                        x: parent.width - 240px - 28px;
+                        y: 52px;
+                        width: 240px;
+                        height: Math.min(Backend.layout-choices.length * 30px + 8px, 360px);
+                        Rectangle {
+                            background: Theme.bg-elevated; border-radius: 8px; border-width: 1px; border-color: Theme.border;
+                            ScrollView {
+                                VerticalLayout {
+                                    padding: 4px;
+                                    for c in Backend.layout-choices: Rectangle {
+                                        height: 30px; border-radius: 6px;
+                                        background: la.has-hover ? Theme.accent-tint : transparent;
+                                        Txt { x: 10px; text: c.label; vertical-alignment: center; color: c.selected ? Theme.accent : Theme.text-primary; }
+                                        la := TouchArea { clicked => { Backend.set-layout(c.key); layout-popup.close(); } }
+                                    }
+                                }
+                            }
+                        }
+                    }
+                }
+                Rectangle { height: 1px; background: Theme.border; }
+
+                // device image + hotspots
+                area := Rectangle {
+                    height: 420px;
+                    background: Theme.bg;
+                    property <float> sw: Backend.device-image.width > 0 ? Backend.device-image.width : 1;
+                    property <float> sh: Backend.device-image.height > 0 ? Backend.device-image.height : 1;
+                    property <bool> wide: sw / sh > Backend.img-w / Backend.img-h;
+                    property <length> pw: (wide ? Backend.img-w : Backend.img-h * sw / sh) * 1px;
+                    property <length> ph: (wide ? Backend.img-w * sh / sw : Backend.img-h) * 1px;
+                    property <length> ox: (self.width - pw) / 2;
+                    property <length> oy: (self.height - ph) / 2;
+                    if Backend.connected: Image {
+                        x: area.ox; y: area.oy; width: area.pw; height: area.ph;
+                        source: Backend.device-image; image-fit: contain;
+                    }
+                    for h in Backend.hotspots: HotspotDot {
+                        x: 0; y: 0; width: parent.width; height: parent.height;
+                        item: h;
+                        cx: area.ox + h.nx * area.pw;
+                        cy: area.oy + h.ny * area.ph;
+                        clicked => { Backend.select-button(h.key); }
+                    }
+                    if !Backend.connected: Rectangle {
+                        width: Math.min(parent.width - 120px, 760px);
+                        height: empty.preferred-height + 52px;
+                        border-radius: 24px; background: Theme.bg-card; border-width: 1px; border-color: Theme.border;
+                        empty := VerticalLayout {
+                            padding: 26px; spacing: 14px;
+                            Pill { text: S.mouse-waiting-for-connection; tint: Theme.offline; fill: #e64d4d2e; dot: true; height: 28px; horizontal-stretch: 0; }
+                            Txt { text: S.mouse-connect-mouse; font-size: 26px; font-weight: 700; wrap: word-wrap; }
+                            Txt { text: S.mouse-connect-mouse-desc; font-size: 13px; color: Theme.text-secondary; wrap: word-wrap; }
+                            HorizontalLayout {
+                                spacing: 10px; alignment: start;
+                                Rectangle { height: 30px; width: h1.preferred-width + 20px; border-radius: 15px; background: Theme.bg-subtle; border-width: 1px; border-color: Theme.border;
+                                    h1 := Txt { text: S.mouse-layout-appears-auto; font-size: 11px; color: Theme.text-secondary; } }
+                                Rectangle { height: 30px; width: h2.preferred-width + 20px; border-radius: 15px; background: Theme.bg-subtle; border-width: 1px; border-color: Theme.border;
+                                    h2 := Txt { text: S.mouse-per-device-settings; font-size: 11px; color: Theme.text-secondary; } }
+                            }
+                        }
+                    }
+                    if Backend.connected && !Backend.has-layout: Rectangle {
+                        width: Math.min(420px, parent.width - 48px);
+                        height: fb.preferred-height + 32px;
+                        border-radius: 16px; background: Theme.bg-card; border-width: 1px; border-color: Theme.border;
+                        fb := VerticalLayout {
+                            padding: 16px; spacing: 8px;
+                            Txt { text: S.mouse-interactive-layout-coming; font-size: 15px; font-weight: 700; }
+                            if Backend.layout-note != "": Txt { text: Backend.layout-note; color: Theme.text-secondary; wrap: word-wrap; }
+                            for b in Backend.fallback-buttons: Rectangle {
+                                height: 40px; border-radius: 10px;
+                                background: b.selected ? Theme.accent.with-alpha(0.12) : fa.has-hover ? Theme.hover-tint : transparent;
+                                border-width: b.selected ? 1px : 0px; border-color: Theme.accent;
+                                Txt { x: 12px; text: b.name; font-size: 13px; font-weight: 700; vertical-alignment: center; color: b.selected ? Theme.accent : Theme.text-primary; }
+                                Txt { x: parent.width * 0.45; width: parent.width * 0.55 - 12px; text: b.action; horizontal-alignment: right; vertical-alignment: center; color: Theme.text-secondary; overflow: elide; }
+                                fa := TouchArea { mouse-cursor: pointer; clicked => { Backend.select-button(b.key); } }
+                            }
+                        }
+                    }
+                }
+
+                if Backend.sel-button != "": Rectangle { height: 1px; background: Theme.border; }
+
+                // action picker
+                if Backend.sel-button != "": VerticalLayout {
+                    padding: 28px; padding-top: 16px; padding-bottom: 24px;
+                    spacing: 16px;
+                    PickerHeader { }
+                    if !Backend.sel-is-default: Rectangle {
+                        height: 34px;
+                        HorizontalLayout {
+                            spacing: 10px; alignment: start;
+                            Toggle { checked: Backend.sel-shift-wheel; toggled(v) => { Backend.set-profile-shift-wheel(v); } }
+                            Txt { text: S.mouse-profile-shift-wheel; vertical-alignment: center; color: Theme.text-secondary; }
+                        }
+                    }
+                    if Backend.picker-mode == 1: ChipRows { rows: Backend.chip-rows; picked(id) => { Backend.pick-action(Backend.sel-button, id); } }
+                    if Backend.picker-mode == 2: VerticalLayout {
+                        spacing: 14px;
+                        SectionLabel { text: S.mouse-scroll-left; }
+                        ChipRows { rows: Backend.left-rows; picked(id) => { Backend.pick-action("hscroll_left", id); } }
+                        SectionLabel { text: S.mouse-scroll-right; }
+                        ChipRows { rows: Backend.right-rows; picked(id) => { Backend.pick-action("hscroll_right", id); } }
+                    }
+                    if Backend.picker-mode == 3: VerticalLayout {
+                        spacing: 12px;
+                        HorizontalLayout {
+                            spacing: 12px;
+                            Txt { text: S.mouse-gesture-swipe; font-size: 13px; font-weight: 700; vertical-alignment: center; }
+                            Btn { text: S.mouse-remove; danger: true; height: 28px; clicked => { Backend.disable-gesture-swipe(); } }
+                            Rectangle { }
+                        }
+                        SectionLabel { text: S.mouse-tap-action; }
+                        Dropdown { text: Backend.gs-tap-label; model: Backend.action-labels; picked(i) => { Backend.pick-index(Backend.sel-button + "_tap", i); } }
+                        HorizontalLayout {
+                            spacing: 12px; alignment: start;
+                            Txt { text: S.mouse-threshold; font-size: 12px; font-weight: 700; }
+                            Txt { text: Backend.gs-threshold + " " + S.unit-px; color: Theme.text-secondary; }
+                        }
+                        SliderBar {
+                            minimum: 20; maximum: 400; step: 5; value: Backend.gs-threshold;
+                            released(v) => { Backend.set-threshold(Math.round(v)); }
+                        }
+                        SectionLabel { text: S.mouse-swipe-actions; }
+                        for sw in Backend.swipes: HorizontalLayout {
+                            spacing: 12px;
+                            Txt { width: 100px; text: sw.label; font-size: 12px; vertical-alignment: center; }
+                            Dropdown { text: sw.action; model: Backend.action-labels; picked(i) => { Backend.pick-index(sw.key, i); } }
+                        }
+                    }
+                    if Backend.show-dpi-presets: Rectangle {
+                        height: dp.preferred-height + 32px;
+                        border-radius: 14px; background: Theme.bg-subtle; border-width: 1px; border-color: Theme.border;
+                        dp := VerticalLayout {
+                            padding: 16px; spacing: 12px;
+                            HorizontalLayout {
+                                spacing: 8px; alignment: start;
+                                for v[i] in Backend.dpi-presets: Chip {
+                                    text: v + " " + S.unit-dpi;
+                                    current: i == Backend.dpi-slot;
+                                    clicked => { Backend.pick-dpi-slot(i); }
+                                }
+                            }
+                            Txt { text: Backend.dpi-presets[Backend.dpi-slot] + " " + S.unit-dpi; color: Theme.text-secondary; }
+                            SliderBar {
+                                minimum: Backend.dpi-min; maximum: Backend.dpi-max; step: 50;
+                                value: Backend.dpi-presets[Backend.dpi-slot];
+                                released(v) => { Backend.set-dpi-preset(Backend.dpi-slot, Math.round(v)); }
+                            }
+                        }
+                    }
+                }
+                if Backend.connected: HorizontalLayout {
+                    padding-left: 28px; padding-right: 28px; padding-top: 12px; spacing: 12px; alignment: start;
+                    Txt { text: S.mouse-share-device-details; color: Theme.text-secondary; vertical-alignment: center; }
+                    Btn { text: S.mouse-copy-device-info; height: 30px; clicked => { Backend.copy-device-info(); } }
+                }
+                if Backend.debug-mode: VerticalLayout {
+                    padding: 28px; padding-top: 16px; spacing: 8px;
+                    Txt { text: S.mouse-debug-events; font-size: 15px; font-weight: 700; }
+                    Txt { text: S.mouse-debug-events-desc; font-size: 11px; color: Theme.text-secondary; }
+                    HorizontalLayout {
+                        spacing: 10px; alignment: start;
+                        Chip { text: Backend.events-on ? S.mouse-on : S.mouse-off; current: Backend.events-on; clicked => { Backend.set-debug-events(!Backend.events-on); } }
+                        Chip { text: Backend.record-mode ? S.mouse-rec : S.mouse-record; current: Backend.record-mode; clicked => { Backend.set-record-mode(!Backend.record-mode); } }
+                        Btn { text: S.mouse-clear; height: 30px; clicked => { Backend.debug-clear(); } }
+                        Btn { text: S.mouse-clear-rec; height: 30px; clicked => { Backend.clear-records(); } }
+                        Btn { text: S.mouse-copy-device-info; height: 30px; enabled: Backend.connected; clicked => { Backend.copy-device-info(); } }
+                    }
+                    // Live gesture monitor (agent GestureEvent stream, subscribed only while this panel is shown)
+                    Rectangle {
+                        border-radius: 10px; background: Theme.bg-subtle; border-width: 1px; border-color: Theme.border;
+                        height: mon.preferred-height;
+                        mon := VerticalLayout {
+                            padding: 12px; spacing: 8px;
+                            Txt { text: S.mouse-live-gesture-monitor; font-size: 11px; font-weight: 700; }
+                            HorizontalLayout {
+                                spacing: 8px; alignment: start;
+                                Pill { text: Backend.gest-active ? S.mouse-held : S.mouse-idle; tint: Backend.gest-active ? #f39c6b : Theme.text-secondary; fill: Backend.gest-active ? #e4734030 : Theme.bg-card; height: 24px; }
+                                Pill { text: Backend.gest-move-seen ? S.mouse-move-seen : S.mouse-no-move; tint: Backend.gest-move-seen ? Theme.accent : Theme.text-secondary; fill: Backend.gest-move-seen ? Theme.accent-dim : Theme.bg-card; height: 24px; }
+                            }
+                            Txt { text: Backend.gest-line; font-family: "Consolas"; font-size: 11px; color: Theme.text-secondary; }
+                            Txt { text: Backend.gest-status; font-size: 11px; wrap: word-wrap; }
+                        }
+                    }
+                    Rectangle {
+                        height: 160px; border-radius: 12px; background: Theme.bg-subtle; border-width: 1px; border-color: Theme.border;
+                        ScrollView {
+                            VerticalLayout {
+                                padding: 10px;
+                                Txt {
+                                    text: Backend.debug-log != "" ? Backend.debug-log : S.mouse-debug-placeholder;
+                                    font-family: "Consolas"; font-size: 11px; wrap: word-wrap;
+                                    color: Backend.debug-log != "" ? Theme.text-primary : Theme.text-dim;
+                                }
+                            }
+                        }
+                    }
+                    Rectangle {
+                        height: 180px; border-radius: 12px; background: Theme.bg-subtle; border-width: 1px; border-color: Theme.border;
+                        ScrollView {
+                            VerticalLayout {
+                                padding: 10px;
+                                Txt {
+                                    text: Backend.gest-records != "" ? Backend.gest-records : S.mouse-gesture-placeholder;
+                                    font-family: "Consolas"; font-size: 11px; wrap: word-wrap;
+                                    color: Backend.gest-records != "" ? Theme.text-primary : Theme.text-dim;
+                                }
+                            }
+                        }
+                    }
+                }                Rectangle { height: 32px; }
+            }
+        }
+    }
+}

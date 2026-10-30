@@ -1,0 +1,212 @@
+// Ports the dialogs of ui/qml/MousePage.qml (add-app, delete-profile), ui/qml/KeyCaptureDialog.qml
+// and the About dialog of ui/qml/Main.qml.
+import { ScrollView, AboutSlint } from "std-widgets.slint";
+import { Theme } from "theme.slint";
+import { Txt, Icon, Btn, SectionLabel } from "widgets.slint";
+import { Backend } from "backend.slint";
+import { S } from "strings.slint";
+
+component Modal inherits Rectangle {
+    in property <length> card-width: 520px;
+    in property <length> card-height: 400px;
+    in property <string> title;
+    in property <string> desc;
+    callback closed();
+    background: #00000099;
+    TouchArea { }
+    Rectangle {
+        width: min(root.card-width, root.width - 40px);
+        height: min(root.card-height, root.height - 40px);
+        border-radius: 24px;
+        background: Theme.bg-elevated;
+        border-width: 1px;
+        border-color: Theme.border;
+        VerticalLayout {
+            padding: 24px;
+            padding-top: 18px;
+            spacing: 14px;
+            HorizontalLayout {
+                spacing: 12px;
+                Rectangle {
+                    width: 36px; height: 36px; border-radius: 12px; background: Theme.accent-dim;
+                    Icon { width: 18px; height: 18px; source: @image-url("../assets/icons/info.svg"); tint: Theme.accent; }
+                }
+                VerticalLayout {
+                    alignment: center; spacing: 3px;
+                    Txt { text: root.title; font-size: 17px; font-weight: 700; }
+                    if root.desc != "": Txt { text: root.desc; font-size: 11px; color: Theme.text-secondary; overflow: elide; }
+                }
+                Rectangle {
+                    width: 34px; height: 34px; border-radius: 12px;
+                    background: xa.has-hover ? Theme.hover-tint : transparent;
+                    Icon { width: 14px; height: 14px; source: @image-url("../assets/icons/x.svg"); tint: Theme.text-secondary; }
+                    xa := TouchArea { mouse-cursor: pointer; clicked => { root.closed(); } }
+                }
+            }
+            @children
+        }
+    }
+}
+
+export component AddAppDialog inherits Modal {
+    card-width: 640px;
+    card-height: 560px;
+    title: S.mouse-add-app-dialog-title;
+    desc: S.mouse-add-app-dialog-desc;
+    closed => { Backend.add-open = false; }
+    HorizontalLayout {
+        spacing: 10px;
+        height: 40px;
+        Rectangle {
+            border-radius: 12px; background: Theme.bg-input; border-width: 1px; border-color: Theme.border;
+            ti := TextInput {
+                x: 14px; width: parent.width - 28px; font-family: Theme.font; font-size: 13px; color: Theme.text-primary;
+                vertical-alignment: center;
+                text <=> Backend.app-query;
+                edited => { Backend.app-query-changed(self.text); }
+            }
+            if Backend.app-query == "": Txt { x: 14px; text: S.mouse-search-placeholder; color: Theme.text-dim; font-size: 13px; vertical-alignment: center; }
+        }
+        Btn { text: S.mouse-browse; height: 40px; clicked => { Backend.app-browse(); } }
+    }
+    SectionLabel { text: Backend.app-searching ? S.mouse-search-results : S.mouse-suggested-apps; }
+    ScrollView {
+        VerticalLayout {
+            spacing: 4px;
+            for a in Backend.app-rows: Rectangle {
+                height: 48px; border-radius: 10px;
+                background: a.selected ? Theme.accent.with-alpha(0.12) : ra.has-hover ? Theme.hover-tint : transparent;
+                border-width: a.selected ? 1px : 0px; border-color: Theme.accent;
+                if a.has-icon: Image { x: 12px; y: 12px; width: 24px; height: 24px; source: a.icon; image-fit: contain; }
+                if !a.has-icon: Rectangle {
+                    x: 12px; y: 12px; width: 24px; height: 24px; border-radius: 12px; background: Theme.accent-dim;
+                    Txt { text: a.initial; color: Theme.accent; font-weight: 700; horizontal-alignment: center; vertical-alignment: center; }
+                }
+                VerticalLayout {
+                    x: 48px; width: parent.width - 60px; alignment: center; spacing: 2px;
+                    Txt { text: a.label; font-size: 13px; font-weight: 700; overflow: elide; }
+                    Txt { text: a.sub; font-size: 10px; color: Theme.text-secondary; overflow: elide; }
+                }
+                ra := TouchArea { mouse-cursor: pointer; clicked => { Backend.app-select(a.id); } }
+            }
+            if Backend.app-rows.length == 0: VerticalLayout {
+                padding: 20px; spacing: 6px;
+                Txt { text: Backend.app-searching ? S.mouse-no-matched : S.mouse-no-suggested; font-size: 14px; font-weight: 700; }
+                Txt { text: Backend.app-searching ? S.mouse-try-different : S.mouse-use-search; color: Theme.text-secondary; }
+            }
+        }
+    }
+    HorizontalLayout {
+        spacing: 10px; alignment: end;
+        Btn { text: S.mouse-cancel; clicked => { Backend.add-open = false; } }
+        Btn { text: S.mouse-create-profile; primary: true; enabled: Backend.app-can-create; clicked => { Backend.app-create(); } }
+    }
+}
+
+export component DeleteDialog inherits Modal {
+    card-width: 460px;
+    card-height: 230px;
+    title: S.mouse-delete-dialog-title;
+    closed => { Backend.delete-open = false; }
+    Txt { text: S.mouse-delete-dialog-confirm-prefix + Backend.delete-label + S.mouse-delete-dialog-confirm-suffix; font-size: 14px; wrap: word-wrap; }
+    Txt { text: S.mouse-delete-dialog-desc; color: Theme.text-secondary; wrap: word-wrap; }
+    Rectangle { }
+    HorizontalLayout {
+        spacing: 10px; alignment: end;
+        Btn { text: S.mouse-cancel; clicked => { Backend.delete-open = false; } }
+        Btn { text: S.mouse-delete-profile; danger: true; clicked => { Backend.delete-confirm(); } }
+    }
+}
+
+export component KeyCaptureDialog inherits Modal {
+    card-width: 560px;
+    card-height: 380px;
+    title: S.key-capture-title;
+    closed => { Backend.kc-cancel(); }
+    Rectangle {
+        height: 52px; border-radius: 12px; background: Theme.bg-input;
+        border-width: 1px; border-color: Backend.kc-error != "" ? Theme.danger : Theme.accent;
+        if Backend.kc-recording: FocusScope {
+            init => { self.focus(); }
+            key-pressed(e) => {
+                Backend.kc-key(e.text, e.modifiers.control, e.modifiers.shift, e.modifiers.alt, e.modifiers.meta, true);
+                accept
+            }
+            key-released(e) => {
+                Backend.kc-key(e.text, e.modifiers.control, e.modifiers.shift, e.modifiers.alt, e.modifiers.meta, false);
+                accept
+            }
+            Txt {
+                x: 14px; width: parent.width - 28px; vertical-alignment: center; font-size: 15px; font-weight: 700;
+                text: Backend.kc-pending != "" ? Backend.kc-pending : Backend.kc-preview != "" ? Backend.kc-preview : S.key-capture-placeholder-recording;
+                color: Backend.kc-pending != "" || Backend.kc-preview != "" ? Theme.text-primary : Theme.text-dim;
+            }
+        }
+        if !Backend.kc-recording: Rectangle {
+            TextInput {
+                init => { self.focus(); }
+                x: 14px; width: parent.width - 28px; font-family: Theme.font; font-size: 15px; color: Theme.text-primary; vertical-alignment: center;
+                text <=> Backend.kc-text;
+                edited => { Backend.kc-text-edited(self.text); }
+            }
+            if Backend.kc-text == "": Txt { x: 14px; text: S.key-capture-placeholder; color: Theme.text-dim; font-size: 15px; vertical-alignment: center; }
+        }
+    }
+    Txt { text: Backend.kc-recording ? S.key-capture-record-hint : S.key-capture-type-hint; color: Theme.text-secondary; wrap: word-wrap; }
+    if !Backend.kc-recording && Backend.kc-preview != "": Txt { text: Backend.kc-preview; font-size: 14px; font-weight: 700; color: Theme.accent; }
+    if Backend.kc-error != "": Txt { text: Backend.kc-error; color: Theme.danger; wrap: word-wrap; }
+    Btn { text: Backend.kc-recording ? S.key-capture-mode-type : S.key-capture-mode-record; height: 30px; clicked => { Backend.kc-toggle-mode(); } }
+    Txt { text: S.key-capture-valid-keys; font-size: 10px; color: Theme.text-dim; wrap: word-wrap; max-height: 40px; }
+    Rectangle { }
+    HorizontalLayout {
+        spacing: 10px; alignment: end;
+        Btn { text: S.key-capture-cancel; clicked => { Backend.kc-cancel(); } }
+        Btn { text: S.key-capture-confirm; primary: true; enabled: Backend.kc-valid; clicked => { Backend.kc-confirm(); } }
+    }
+}
+
+export component AboutDialog inherits Modal {
+    card-width: 500px;
+    card-height: 640px;
+    title: S.about-title;
+    desc: S.about-subtitle;
+    VerticalLayout {
+        spacing: 12px;
+        Rectangle {
+            height: 86px; border-radius: 20px; background: Theme.accent-dim;
+            VerticalLayout {
+                padding: 18px; spacing: 6px;
+                Txt { text: S.about-version; font-size: 11px; font-weight: 700; color: Theme.text-secondary; }
+                Txt { text: Backend.version-label; font-size: 28px; font-weight: 700; }
+            }
+        }
+        Rectangle {
+            border-radius: 18px; background: Theme.bg-subtle; border-width: 1px; border-color: Theme.border;
+            HorizontalLayout {
+                padding: 18px; spacing: 24px;
+                VerticalLayout {
+                    spacing: 6px;
+                    Txt { text: S.about-build-mode; font-size: 11px; font-weight: 700; color: Theme.text-secondary; }
+                    Txt { text: Backend.build-mode; font-size: 12px; font-family: "Consolas"; }
+                }
+                VerticalLayout {
+                    spacing: 6px;
+                    Txt { text: S.about-commit; font-size: 11px; font-weight: 700; color: Theme.text-secondary; }
+                    Txt { text: Backend.commit; font-size: 12px; font-family: "Consolas"; }
+                }
+            }
+        }
+        Rectangle {
+            border-radius: 18px; background: Theme.bg-subtle; border-width: 1px; border-color: Theme.border;
+            VerticalLayout {
+                padding: 18px; spacing: 8px;
+                Txt { text: S.about-launch-path; font-size: 11px; font-weight: 700; color: Theme.text-secondary; }
+                Txt { text: Backend.launch-path; font-size: 12px; wrap: word-wrap; font-family: "Consolas"; }
+            }
+        }
+        Txt { text: S.about-credits; font-size: 11px; color: Theme.text-secondary; wrap: word-wrap; }
+        Txt { text: S.about-start-minimized; font-size: 11px; color: Theme.text-secondary; wrap: word-wrap; }
+        // Slint royalty-free licence: the product must show this attribution.
+        AboutSlint { height: 90px; }
+    }
+}

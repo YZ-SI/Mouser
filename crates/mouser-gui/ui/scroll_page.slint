@@ -1,0 +1,213 @@
+// Ports ui/qml/ScrollPage.qml ("General": DPI, SmartShift, appearance, language, startup,
+// screenshots folder, diagnostics export, scroll direction, Shift+wheel opt-out from triage #309).
+// The update-check toggle is intentionally absent (auto-update is excluded; the key stays in config).
+import { ScrollView } from "std-widgets.slint";
+import { Theme } from "theme.slint";
+import { Txt, Chip, Pill, SliderBar, ToggleRow, Card, Btn } from "widgets.slint";
+import { Backend } from "backend.slint";
+import { S } from "strings.slint";
+
+component Head inherits VerticalLayout {
+    in property <string> title;
+    in property <string> desc;
+    spacing: 4px;
+    Txt { text: title; font-size: 16px; font-weight: 700; }
+    if desc != "": Txt { text: desc; font-size: 11px; color: Theme.text-secondary; wrap: word-wrap; }
+}
+
+export component ScrollPage inherits Rectangle {
+    background: Theme.bg;
+    ScrollView {
+        VerticalLayout {
+            padding: 28px;
+            padding-top: 24px;
+            spacing: 18px;
+            alignment: start;
+            VerticalLayout {
+                spacing: 4px;
+                Txt { text: S.scroll-title; font-size: 20px; font-weight: 700; }
+                Txt { text: S.scroll-subtitle; color: Theme.text-secondary; }
+            }
+
+            // Pointer speed
+            Card {
+                height: dpi-col.preferred-height;
+                dpi-col := VerticalLayout {
+                    padding: 20px;
+                    spacing: 12px;
+                    Head {
+                        title: S.scroll-pointer-speed;
+                        desc: Backend.dpi-min == 200 && Backend.dpi-max == 8000 ? S.scroll-pointer-speed-desc
+                            : S.scroll-pointer-speed-desc-range-prefix + Backend.dpi-min + S.scroll-pointer-speed-desc-range-to + Backend.dpi-max + S.scroll-pointer-speed-desc-range-suffix;
+                    }
+                    HorizontalLayout {
+                        spacing: 12px;
+                        Txt { text: Backend.dpi-min; font-size: 10px; color: Theme.text-dim; vertical-alignment: center; }
+                        SliderBar {
+                            minimum: Backend.dpi-min; maximum: Backend.dpi-max; step: 50; value: Backend.dpi;
+                            released(v) => { Backend.set-dpi(Math.round(v)); }
+                        }
+                        Txt { text: Backend.dpi-max; font-size: 10px; color: Theme.text-dim; vertical-alignment: center; }
+                        Pill { text: Backend.dpi + " " + S.unit-dpi; tint: Theme.accent; fill: Theme.accent-dim; height: 36px; }
+                    }
+                    HorizontalLayout {
+                        spacing: 8px;
+                        alignment: start;
+                        Txt { text: S.scroll-presets; font-size: 11px; color: Theme.text-dim; vertical-alignment: center; }
+                        for v in Backend.dpi-fixed-presets: Chip {
+                            text: v; height: 30px;
+                            enabled: v >= Backend.dpi-min && v <= Backend.dpi-max;
+                            current: v == Backend.dpi;
+                            clicked => { Backend.set-dpi(v); }
+                        }
+                    }
+                }
+            }
+
+            // SmartShift / wheel mode
+            if Backend.has-smart-shift: Card {
+                height: ss-col.preferred-height;
+                ss-col := VerticalLayout {
+                    padding: 20px;
+                    spacing: 12px;
+                    Head { title: S.scroll-smart-shift; desc: S.scroll-smart-shift-desc; }
+                    ToggleRow { text: S.scroll-smart-shift; checked: Backend.ss-on; toggled(v) => { Backend.set-flag("smart_shift_enabled", v); } }
+                    if Backend.ss-on: VerticalLayout {
+                        spacing: 6px;
+                        HorizontalLayout {
+                            spacing: 12px; alignment: start;
+                            Txt { text: S.scroll-sensitivity-value; font-size: 11px; color: Theme.text-dim; }
+                            Txt { text: Backend.ss-threshold; font-size: 11px; color: Theme.text-secondary; }
+                        }
+                        SliderBar { minimum: 1; maximum: 50; step: 1; value: Backend.ss-threshold; released(v) => { Backend.set-ss-threshold(Math.round(v)); } }
+                    }
+                    if !Backend.ss-on: VerticalLayout {
+                        spacing: 8px;
+                        Txt { text: S.scroll-scroll-mode-section; font-size: 11px; color: Theme.text-dim; }
+                        HorizontalLayout {
+                            spacing: 10px; alignment: start;
+                            Chip { text: S.scroll-ratchet; current: Backend.ss-mode == "ratchet"; clicked => { Backend.set-ss-mode("ratchet"); } }
+                            Chip { text: S.scroll-freespin; current: Backend.ss-mode == "freespin"; clicked => { Backend.set-ss-mode("freespin"); } }
+                        }
+                    }
+                    if Backend.ss-force-supported: VerticalLayout {
+                        spacing: 6px;
+                        HorizontalLayout {
+                            spacing: 12px; alignment: start;
+                            Txt { text: S.scroll-scroll-force-value; font-size: 11px; color: Theme.text-dim; }
+                            Txt { text: Backend.ss-force; font-size: 11px; color: Theme.text-secondary; }
+                        }
+                        Txt { text: S.scroll-scroll-force-desc; font-size: 11px; color: Theme.text-secondary; wrap: word-wrap; }
+                        SliderBar { minimum: 1; maximum: 100; step: 1; value: Backend.ss-force; released(v) => { Backend.set-ss-force(Math.round(v)); } }
+                    }
+                }
+            }
+
+            // Appearance
+            Card {
+                height: ap-col.preferred-height;
+                ap-col := VerticalLayout {
+                    padding: 20px;
+                    spacing: 12px;
+                    Head { title: S.scroll-appearance; desc: S.scroll-appearance-desc; }
+                    HorizontalLayout {
+                        spacing: 10px; alignment: start;
+                        Chip { text: S.scroll-system; current: Backend.appearance == "system"; clicked => { Backend.set-appearance("system"); } }
+                        Chip { text: S.scroll-light; current: Backend.appearance == "light"; clicked => { Backend.set-appearance("light"); } }
+                        Chip { text: S.scroll-dark; current: Backend.appearance == "dark"; clicked => { Backend.set-appearance("dark"); } }
+                    }
+                }
+            }
+
+            // Language
+            Card {
+                height: lg-col.preferred-height;
+                lg-col := VerticalLayout {
+                    padding: 20px;
+                    spacing: 12px;
+                    Head { title: S.scroll-language; desc: S.scroll-language-desc; }
+                    HorizontalLayout {
+                        spacing: 10px; alignment: start;
+                        Chip { text: S.lang-en-name; current: Backend.language == "en"; clicked => { Backend.set-language("en"); } }
+                        Chip { text: S.lang-zh-CN-name; current: Backend.language == "zh_CN"; clicked => { Backend.set-language("zh_CN"); } }
+                        Chip { text: S.lang-zh-TW-name; current: Backend.language == "zh_TW"; clicked => { Backend.set-language("zh_TW"); } }
+                    }
+                }
+            }
+
+            // Startup + updates
+            Card {
+                height: st-col.preferred-height;
+                st-col := VerticalLayout {
+                    padding: 20px;
+                    spacing: 10px;
+                    Head { title: S.scroll-startup; desc: S.scroll-startup-desc; }
+                    ToggleRow { text: S.scroll-start-at-login; checked: Backend.start-login; toggled(v) => { Backend.set-flag("start_at_login", v); } }
+                }
+            }
+
+            // Screenshots (ScrollPage.qml "Screenshots")
+            Card {
+                height: sc-col.preferred-height;
+                sc-col := VerticalLayout {
+                    padding: 20px;
+                    spacing: 12px;
+                    Head { title: S.scroll-screenshots; desc: S.scroll-screenshots-desc; }
+                    Rectangle {
+                        height: 56px; border-radius: 12px; background: Theme.bg-subtle;
+                        HorizontalLayout {
+                            padding-left: 16px; padding-right: 12px; spacing: 10px;
+                            VerticalLayout {
+                                alignment: center; spacing: 2px;
+                                Txt { text: S.scroll-screenshots-save-to; font-size: 11px; color: Theme.text-dim; }
+                                Txt {
+                                    text: Backend.has-screenshot-dir ? Backend.screenshot-dir : S.scroll-screenshots-system-default;
+                                    font-size: 13px; overflow: elide;
+                                }
+                            }
+                            Btn { text: S.scroll-screenshots-choose; y: (parent.height - self.height) / 2; clicked => { Backend.choose-screenshot-dir(); } }
+                            Btn { text: S.scroll-screenshots-default; y: (parent.height - self.height) / 2; enabled: Backend.has-screenshot-dir; clicked => { Backend.reset-screenshot-dir(); } }
+                        }
+                    }
+                }
+            }
+
+            // Diagnostics export (writes a redacted folder; nothing is uploaded)
+            Card {
+                height: dg-col.preferred-height;
+                dg-col := VerticalLayout {
+                    padding: 20px;
+                    spacing: 12px;
+                    Head { title: S.scroll-diagnostics; desc: S.scroll-diagnostics-desc; }
+                    HorizontalLayout {
+                        alignment: start;
+                        Btn { text: S.scroll-export-diagnostics; enabled: Backend.conn-state == "ok"; clicked => { Backend.export-diagnostics(); } }
+                    }
+                }
+            }
+
+            // Scroll direction
+            Card {
+                height: sd-col.preferred-height;
+                sd-col := VerticalLayout {
+                    padding: 20px;
+                    spacing: 10px;
+                    Head { title: S.scroll-scroll-direction; desc: S.scroll-scroll-direction-desc; }
+                    ToggleRow { text: S.scroll-invert-vertical; checked: Backend.invert-v; toggled(v) => { Backend.set-flag("invert_vscroll", v); } }
+                    ToggleRow { text: S.scroll-invert-horizontal; checked: Backend.invert-h; toggled(v) => { Backend.set-flag("invert_hscroll", v); } }
+                    ToggleRow { text: S.scroll-ignore-trackpad; desc: S.scroll-ignore-trackpad-desc; checked: Backend.ignore-trackpad; toggled(v) => { Backend.set-flag("ignore_trackpad", v); } }
+                    ToggleRow { text: S.scroll-smooth-volume; desc: S.scroll-smooth-volume-desc; checked: Backend.smooth-volume; toggled(v) => { Backend.set-flag("smooth_volume_scroll", v); } }
+                    ToggleRow { text: S.scroll-shift-wheel; desc: S.scroll-shift-wheel-desc; checked: Backend.shift-wheel; toggled(v) => { Backend.set-flag("shift_wheel_hscroll", v); } }
+                }
+            }
+            Card {
+                height: dbg.preferred-height;
+                dbg := VerticalLayout {
+                    padding: 20px; spacing: 10px;
+                    ToggleRow { text: S.scroll-debug-mode; desc: S.scroll-debug-mode-desc; checked: Backend.debug-mode; toggled(v) => { Backend.set-flag("debug_mode", v); } }
+                }
+            }
+            Txt { text: S.scroll-dpi-note; font-size: 11px; color: Theme.text-dim; wrap: word-wrap; }
+        }
+    }
+}

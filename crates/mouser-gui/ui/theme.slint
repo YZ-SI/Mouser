@@ -1,0 +1,26 @@
+// Ports ui/qml/Theme.js (palette) from Mouser (MIT).
+export global Theme {
+    in property <bool> dark: true;
+    out property <color> bg: dark ? #111827 : #f5f7fb;
+    out property <color> bg-elevated: dark ? #0f172a : #ffffff;
+    out property <color> bg-card: dark ? #16213e : #ffffff;
+    out property <color> bg-card-hover: dark ? #1f3460 : #edf3ff;
+    out property <color> bg-sidebar: dark ? #0b1220 : #e9eef7;
+    out property <color> bg-input: dark ? #111827 : #ffffff;
+    out property <color> bg-subtle: dark ? #0f1525 : #f0f4fa;
+    out property <color> accent: dark ? #00d4aa : #0ea5a4;
+    out property <color> accent-hover: dark ? #00ffc8 : #14b8a6;
+    out property <color> accent-dim: dark ? #0d2e26 : #d9f4ee;
+    out property <color> text-primary: dark ? #edf2f7 : #142033;
+    out property <color> text-secondary: dark ? #9aa4b6 : #526077;
+    out property <color> text-dim: dark ? #6f7b90 : #76839a;
+    out property <color> border: dark ? #263246 : #d5ddeb;
+    out property <color> danger: dark ? #ff6b6b : #c73c4c;
+    out property <color> danger-bg: dark ? #5b1f26 : #fbe3e7;
+    out property <color> warning: dark ? #ffb347 : #b7791f;
+    out property <color> tooltip-bg: #314055;
+    out property <color> accent-tint: dark ? #00d4aa1f : #0ea5a429;
+    out property <color> hover-tint: dark ? #ffffff10 : #00000008;
+    out property <color> offline: #e05555;
+    out property <string> font: "Segoe UI";
+}

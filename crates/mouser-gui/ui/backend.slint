@@ -1,0 +1,202 @@
+// Ports the QML context properties `backend` / `lm` / `uiState` (ui/backend.py, ui/locale_manager.py).
+// Rust fills these properties; the pages call the callbacks. Nothing here writes config.
+export struct ProfileItem { name: string, label: string, apps: string, active: bool, selected: bool, initial: string, icon: image, has-icon: bool }
+export struct ActionItem { id: string, label: string, current: bool }
+export struct ChipRow { title: string, items: [ActionItem] }
+export struct HotspotItem { key: string, label: string, sub: string, nx: float, ny: float, left: bool, ox: float, oy: float, selected: bool }
+export struct ButtonRow { key: string, name: string, action: string, selected: bool }
+export struct SwipeRow { key: string, label: string, action: string }
+export struct AppRow { id: string, label: string, sub: string, selected: bool, initial: string, icon: image, has-icon: bool }
+export struct Choice { key: string, label: string, selected: bool }
+
+export global Backend {
+    // shell
+    in-out property <int> page: 0;
+    in property <string> conn-state: "connecting"; // connecting | ok | error
+    in property <string> conn-error;
+    in property <string> window-title: "Mouser";
+    in property <string> version-label: "v0.1.0";
+    in property <string> launch-path;
+    in property <string> toast;
+    in property <bool> show-haptic;
+    in property <bool> show-ring;
+    in-out property <bool> about-open;
+    callback retry();
+    callback navigate(int);
+
+    // device
+    in property <bool> connected;
+    in property <string> device-name;
+    in property <int> battery: -1;
+    in property <bool> charging;
+    in property <int> dpi-min: 200;
+    in property <int> dpi-max: 8000;
+    in property <bool> has-smart-shift;
+    in property <bool> has-force;
+    in property <image> device-image;
+    in property <float> img-w: 460;
+    in property <float> img-h: 360;
+    in property <bool> has-layout;
+    in property <string> layout-note;
+    in property <string> layout-pill;
+    in property <bool> layout-overridden;
+    in property <[Choice]> layout-choices;
+    callback set-layout(string);
+
+    // mouse page
+    in property <[ProfileItem]> profiles;
+    in property <string> sel-profile;
+    in property <string> sel-profile-label;
+    in property <bool> sel-is-default;
+    in property <bool> sel-shift-wheel: true;
+    in property <[HotspotItem]> hotspots;
+    in property <[ButtonRow]> fallback-buttons;
+    in property <string> sel-button;
+    in property <string> sel-title;
+    in property <string> sel-subtitle;
+    in property <int> picker-mode; // 0 none, 1 chips, 2 hscroll, 3 gesture pad (swipe editor)
+    in property <[ChipRow]> chip-rows;
+    in property <[ChipRow]> left-rows;
+    in property <[ChipRow]> right-rows;
+    in property <bool> gesture-eligible;
+    in property <[string]> action-labels;
+    in property <string> gs-tap-label;
+    in property <int> gs-threshold: 100;
+    in property <[SwipeRow]> swipes;
+    in property <bool> show-dpi-presets;
+    in property <[int]> dpi-presets;
+    in property <int> dpi-slot;
+    in property <int> dpi: 1000;
+    in-out property <length> chips-width: 700px;
+    callback select-profile(string);
+    callback select-button(string);
+    callback pick-action(string, string);      // target key, action id
+    callback pick-index(string, int);           // target key, index into action-labels
+    callback enable-gesture-swipe();
+    callback disable-gesture-swipe();
+    callback set-threshold(int);
+    callback delete-profile-request();
+    callback set-profile-shift-wheel(bool);
+    callback pick-dpi-slot(int);
+    callback set-dpi-preset(int, int);
+    callback chips-width-changed(length);
+
+    // add-app dialog
+    in-out property <bool> add-open;
+    in property <[AppRow]> app-rows;
+    in property <bool> app-searching;
+    in property <bool> app-can-create;
+    in-out property <string> app-query;
+    callback open-add-app();
+    callback app-query-changed(string);
+    callback app-select(string);
+    callback app-create();
+    callback app-browse();
+
+    // debug panel + device info (MousePage.qml footer)
+    in property <string> debug-log;
+    in property <bool> events-on: true;
+    in property <bool> record-mode;
+    in property <bool> gest-active;
+    in property <bool> gest-move-seen;
+    in property <string> gest-line;
+    in property <string> gest-status;
+    in property <string> gest-records;
+    callback debug-clear();
+    callback copy-device-info();
+    callback set-debug-events(bool);
+    callback set-record-mode(bool);
+    callback clear-records();
+
+    // About: build details
+    in property <string> build-mode;
+    in property <string> commit;
+
+    // screenshots + diagnostics (General page)
+    in property <string> screenshot-dir;
+    in property <bool> has-screenshot-dir;
+    callback choose-screenshot-dir();
+    callback reset-screenshot-dir();
+    callback export-diagnostics();
+
+    // config-problem banner (agent `ConfigProblem`): "" = none, else corrupt | newer_version | unreadable
+    in property <string> problem-kind;
+    in property <string> problem-detail;
+    callback problem-reset();
+    callback problem-dismiss();
+
+    // delete dialog
+    in-out property <bool> delete-open;
+    in property <string> delete-label;
+    callback delete-confirm();
+
+    // key capture dialog (ui/qml/KeyCaptureDialog.qml)
+    in-out property <bool> kc-open;
+    in property <bool> kc-recording;
+    in property <string> kc-preview;
+    in property <string> kc-error;
+    in property <bool> kc-valid;
+    in-out property <string> kc-text;
+    in property <string> kc-pending;
+    callback kc-key(string, bool, bool, bool, bool, bool); // text, ctrl, shift, alt, meta, pressed
+    callback kc-toggle-mode();
+    callback kc-text-edited(string);
+    callback kc-confirm();
+    callback kc-cancel();
+
+    // general page (ScrollPage.qml)
+    in property <bool> ss-on;
+    in property <string> ss-mode: "ratchet";
+    in property <int> ss-threshold: 25;
+    in property <bool> ss-force-supported;
+    in property <int> ss-force: 50;
+    in property <bool> invert-v;
+    in property <bool> invert-h;
+    in property <bool> shift-wheel: true;
+    in property <bool> start-login;
+    in property <bool> ignore-trackpad;
+    in property <bool> smooth-volume;
+    in property <bool> debug-mode;
+    in property <string> appearance: "system";
+    in property <string> language: "en";
+    in property <[int]> dpi-fixed-presets: [400, 800, 1000, 1600, 2400, 4000, 6000, 8000];
+    callback set-dpi(int);
+    callback set-flag(string, bool);
+    callback set-ss-mode(string);
+    callback set-ss-threshold(int);
+    callback set-ss-force(int);
+    callback set-appearance(string);
+    callback set-language(string);
+
+    // haptic page (HapticPage.qml)
+    in property <bool> haptic-enabled: true;
+    in property <int> haptic-level: 2;
+    in property <bool> haptic-dedup: true;
+    in property <bool> ring-hover-haptic: true;
+    in property <[ChipRow]> hap-a-on;
+    in property <[ChipRow]> hap-a-off;
+    in property <[ChipRow]> hap-b-on;
+    in property <[ChipRow]> hap-b-off;
+    callback set-haptic-enabled(bool);
+    callback set-haptic-level(int);
+    callback set-haptic-action(string, bool);
+    callback set-haptic-button(string, bool);
+    callback haptic-test();
+    in property <bool> force-supported;
+    in property <int> force-min;
+    in property <int> force-max: 100;
+    in property <int> force-default: 50;
+    in property <int> force-value: 50;
+    callback set-force(int);
+
+    // actions ring page (ActionsRingConfig.qml)
+    in property <int> ring-hold-ms: 250;
+    in property <bool> ring-global: true;
+    in property <string> ring-profile-label;
+    in property <[string]> ring-profile-labels;
+    in property <[string]> ring-slot-labels;
+    callback set-ring-hold(int);
+    callback set-ring-global(bool);
+    callback set-ring-profile(int);
+    callback set-ring-slot(int, int);
+}

@@ -1,0 +1,3 @@
+mouser-rs is a Rust rewrite of Mouser (https://github.com/TomBadash/Mouser), MIT License,
+Copyright (c) 2026 Tom Badash. Its licence text ships as crates/mouser-gui/assets/MOUSER-LICENSE.txt.
+The application icon (logo.ico) and the Logitech device images are taken from Mouser.

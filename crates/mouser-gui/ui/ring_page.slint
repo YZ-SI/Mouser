@@ -1,0 +1,60 @@
+// Ports ui/qml/ActionsRingConfig.qml (hold delay, global/per-app scope, per-slot actions).
+import { ScrollView } from "std-widgets.slint";
+import { Theme } from "theme.slint";
+import { Txt, Dropdown, SliderBar, ToggleRow, Card } from "widgets.slint";
+import { Backend } from "backend.slint";
+import { S } from "strings.slint";
+
+export component RingPage inherits Rectangle {
+    background: Theme.bg;
+    ScrollView {
+        VerticalLayout {
+            padding: 28px;
+            padding-top: 24px;
+            spacing: 16px;
+            alignment: start;
+            VerticalLayout {
+                spacing: 4px;
+                Txt { text: S.ring-title; font-size: 20px; font-weight: 700; }
+                Txt { text: S.ring-subtitle; color: Theme.text-secondary; }
+            }
+            Card {
+                height: hd.preferred-height;
+                hd := VerticalLayout {
+                    padding: 20px; spacing: 10px;
+                    HorizontalLayout {
+                        spacing: 12px; alignment: start;
+                        Txt { text: S.ring-hold-delay; font-size: 15px; font-weight: 700; }
+                        Txt { text: Backend.ring-hold-ms + " " + S.unit-ms; color: Theme.text-secondary; vertical-alignment: center; }
+                    }
+                    Txt { text: S.ring-hold-delay-desc; font-size: 11px; color: Theme.text-secondary; wrap: word-wrap; }
+                    SliderBar { minimum: 100; maximum: 500; step: 10; value: Backend.ring-hold-ms; released(v) => { Backend.set-ring-hold(Math.round(v)); } }
+                }
+            }
+            ToggleRow {
+                text: S.ring-scope-title;
+                desc: Backend.ring-global ? S.ring-scope-global-desc : S.ring-scope-perapp-desc;
+                checked: Backend.ring-global;
+                toggled(v) => { Backend.set-ring-global(v); }
+            }
+            if !Backend.ring-global: HorizontalLayout {
+                spacing: 12px;
+                Txt { text: S.ring-scope-app; vertical-alignment: center; }
+                Dropdown { text: Backend.ring-profile-label; model: Backend.ring-profile-labels; picked(i) => { Backend.set-ring-profile(i); } }
+            }
+            Card {
+                height: sl.preferred-height;
+                sl := VerticalLayout {
+                    padding: 20px; spacing: 12px;
+                    Txt { text: S.ring-slots-title; font-size: 15px; font-weight: 700; }
+                    Txt { text: S.ring-slots-desc; font-size: 11px; color: Theme.text-secondary; wrap: word-wrap; }
+                    for lbl[i] in Backend.ring-slot-labels: HorizontalLayout {
+                        spacing: 12px;
+                        Txt { width: 80px; text: S.ring-slot-prefix + (i + 1); vertical-alignment: center; }
+                        Dropdown { text: lbl; model: Backend.action-labels; picked(idx) => { Backend.set-ring-slot(i, idx); } }
+                    }
+                }
+            }
+        }
+    }
+}

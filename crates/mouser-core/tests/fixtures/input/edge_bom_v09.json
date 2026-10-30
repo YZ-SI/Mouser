@@ -1,0 +1,38 @@
+﻿{
+  "version": 9,
+  "active_profile": "default",
+  "profiles": {
+    "default": {
+      "label": "Default (All Apps)",
+      "mappings": {
+        "middle": "none",
+        "xbutton1": "alt_tab",
+        "xbutton2": "alt_tab",
+        "hscroll_left": "browser_back",
+        "hscroll_right": "browser_forward",
+        "mode_shift": "switch_scroll_mode",
+        "actions_ring": "none"
+      }
+    },
+    "Media": {
+      "label": "Media",
+      "apps": [
+        "wmplayer.exe",
+        "vlc.exe"
+      ],
+      "mappings": {
+        "middle": "play_pause",
+        "xbutton1": "alt_tab",
+        "xbutton2": "alt_tab",
+        "hscroll_left": "browser_back",
+        "hscroll_right": "browser_forward"
+      }
+    }
+  },
+  "settings": {
+    "start_minimized": true,
+    "hscroll_threshold": 1,
+    "haptic_level": 1,
+    "ignore_trackpad": false
+  }
+}

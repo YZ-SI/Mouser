@@ -1,0 +1,110 @@
+// Ports ui/qml/HapticPage.qml (intensity, test pulse, per-action and per-button enable lists,
+// de-duplication, Actions Ring slot feedback). Gesture-button force sensing is not ported
+// (the agent protocol does not carry its range).
+import { ScrollView } from "std-widgets.slint";
+import { Theme } from "theme.slint";
+import { Txt, Chip, ChipRows, Btn, ToggleRow, Card, SectionLabel } from "widgets.slint";
+import { Backend } from "backend.slint";
+import { S } from "strings.slint";
+
+export component HapticPage inherits Rectangle {
+    background: Theme.bg;
+    property <[string]> level-keys: ["0", "1", "2", "3"];
+    ScrollView {
+        VerticalLayout {
+            padding: 28px;
+            padding-top: 24px;
+            spacing: 16px;
+            alignment: start;
+            VerticalLayout {
+                spacing: 4px;
+                Txt { text: S.haptic-title; font-size: 20px; font-weight: 700; }
+                Txt { text: S.haptic-subtitle; color: Theme.text-secondary; }
+            }
+            ToggleRow { text: S.haptic-enabled; checked: Backend.haptic-enabled; toggled(v) => { Backend.set-haptic-enabled(v); } }
+
+            Card {
+                height: lv.preferred-height;
+                opacity: Backend.haptic-enabled ? 1 : 0.4;
+                lv := VerticalLayout {
+                    padding: 20px; spacing: 10px;
+                    Txt { text: S.haptic-level; font-size: 15px; font-weight: 700; }
+                    Txt { text: S.haptic-level-desc; font-size: 11px; color: Theme.text-secondary; wrap: word-wrap; }
+                    HorizontalLayout {
+                        spacing: 10px; alignment: start;
+                        Chip { text: S.haptic-level-subtle; enabled: Backend.haptic-enabled; current: Backend.haptic-level == 0; clicked => { Backend.set-haptic-level(0); } }
+                        Chip { text: S.haptic-level-low; enabled: Backend.haptic-enabled; current: Backend.haptic-level == 1; clicked => { Backend.set-haptic-level(1); } }
+                        Chip { text: S.haptic-level-medium; enabled: Backend.haptic-enabled; current: Backend.haptic-level == 2; clicked => { Backend.set-haptic-level(2); } }
+                        Chip { text: S.haptic-level-high; enabled: Backend.haptic-enabled; current: Backend.haptic-level == 3; clicked => { Backend.set-haptic-level(3); } }
+                    }
+                }
+            }
+
+            if Backend.force-supported: Card {
+                height: fs.preferred-height;
+                fs := VerticalLayout {
+                    padding: 20px; spacing: 10px;
+                    Txt { text: S.haptic-force-title; font-size: 15px; font-weight: 700; }
+                    Txt { text: S.haptic-force-desc; font-size: 11px; color: Theme.text-secondary; wrap: word-wrap; }
+                    HorizontalLayout {
+                        spacing: 10px; alignment: start;
+                        for p[i] in [S.haptic-force-light, S.haptic-force-low, S.haptic-force-medium, S.haptic-force-firm]: Chip {
+                            property <int> v: Backend.force-min + Math.round((Backend.force-max - Backend.force-min) * [0.0, 0.33, 0.66, 1.0][i]);
+                            text: p;
+                            current: Math.abs(Backend.force-value - v) <= Math.max(1, Math.round((Backend.force-max - Backend.force-min) * 0.165));
+                            clicked => { Backend.set-force(v); }
+                        }
+                    }
+                    if Backend.force-value < Backend.force-default: Txt { text: S.haptic-force-warning; font-size: 11px; color: Theme.warning; wrap: word-wrap; }
+                }
+            }
+            Card {
+                height: ts.preferred-height;
+                opacity: Backend.haptic-enabled ? 1 : 0.4;
+                ts := HorizontalLayout {
+                    padding: 20px; spacing: 16px;
+                    VerticalLayout {
+                        spacing: 4px;
+                        Txt { text: S.haptic-test-title; font-size: 15px; font-weight: 700; }
+                        Txt { text: S.haptic-test-desc; font-size: 11px; color: Theme.text-secondary; wrap: word-wrap; }
+                    }
+                    Btn { text: S.haptic-test; primary: true; enabled: Backend.haptic-enabled; clicked => { Backend.haptic-test(); } }
+                }
+            }
+
+            Card {
+                height: ac.preferred-height;
+                opacity: Backend.haptic-enabled ? 1 : 0.4;
+                ac := VerticalLayout {
+                    padding: 20px; spacing: 10px;
+                    Txt { text: S.haptic-actions-title; font-size: 15px; font-weight: 700; }
+                    Txt { text: S.haptic-actions-desc; font-size: 11px; color: Theme.text-secondary; wrap: word-wrap; }
+                    SectionLabel { text: S.haptic-actions-enabled; }
+                    if Backend.hap-a-on.length == 0: Txt { text: S.haptic-actions-empty; color: Theme.text-dim; }
+                    ChipRows { rows: Backend.hap-a-on; chips-enabled: Backend.haptic-enabled; picked(id) => { Backend.set-haptic-action(id, false); } }
+                    SectionLabel { text: S.haptic-actions-available; }
+                    ChipRows { rows: Backend.hap-a-off; chips-enabled: Backend.haptic-enabled; picked(id) => { Backend.set-haptic-action(id, true); } }
+                }
+            }
+
+            Card {
+                height: bt.preferred-height;
+                opacity: Backend.haptic-enabled ? 1 : 0.4;
+                bt := VerticalLayout {
+                    padding: 20px; spacing: 10px;
+                    Txt { text: S.haptic-buttons-title; font-size: 15px; font-weight: 700; }
+                    Txt { text: S.haptic-buttons-desc; font-size: 11px; color: Theme.text-secondary; wrap: word-wrap; }
+                    SectionLabel { text: S.haptic-buttons-enabled; }
+                    if Backend.hap-b-on.length == 0: Txt { text: S.haptic-buttons-empty; color: Theme.text-dim; }
+                    ChipRows { rows: Backend.hap-b-on; chips-enabled: Backend.haptic-enabled; picked(id) => { Backend.set-haptic-button(id, false); } }
+                    SectionLabel { text: S.haptic-buttons-available; }
+                    ChipRows { rows: Backend.hap-b-off; chips-enabled: Backend.haptic-enabled; picked(id) => { Backend.set-haptic-button(id, true); } }
+                }
+            }
+
+            ToggleRow { text: S.haptic-dedup-title; desc: S.haptic-dedup-desc; checked: Backend.haptic-dedup; enabled: Backend.haptic-enabled; toggled(v) => { Backend.set-flag("haptic_dedup", v); } }
+            ToggleRow { text: S.haptic-ring-hover-title; desc: S.haptic-ring-hover-desc; checked: Backend.ring-hover-haptic; enabled: Backend.haptic-enabled; toggled(v) => { Backend.set-flag("actions_ring_hover_haptic", v); } }
+            Txt { text: S.haptic-experimental-note; font-size: 11px; color: Theme.text-dim; wrap: word-wrap; }
+        }
+    }
+}

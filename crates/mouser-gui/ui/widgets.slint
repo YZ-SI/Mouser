@@ -1,0 +1,299 @@
+// Ports ui/qml/ActionChip.qml, ui/qml/WheelSafeSlider.qml and ui/qml/AppIcon.qml (plus the
+// toggle / dropdown / card controls the QML pages build from Material components).
+import { Theme } from "theme.slint";
+import { ScrollView } from "std-widgets.slint";
+import { ChipRow } from "backend.slint";
+
+export component Txt inherits Text {
+    color: Theme.text-primary;
+    font-family: Theme.font;
+    font-size: 12px;
+}
+
+// AppIcon.qml: an SVG recoloured to a theme colour.
+export component Icon inherits Image {
+    in property <color> tint: Theme.text-secondary;
+    colorize: tint;
+    image-fit: contain;
+}
+
+// ActionChip.qml
+export component Chip inherits Rectangle {
+    in property <string> text;
+    in property <bool> current;
+    in property <bool> enabled: true;
+    callback clicked();
+    height: 34px;
+    width: label.preferred-width + 24px;
+    border-radius: 9px;
+    background: current ? Theme.accent : ta.has-hover && enabled ? Theme.bg-card-hover : Theme.bg-card;
+    border-width: 1px;
+    border-color: current ? Theme.accent : Theme.border;
+    opacity: enabled ? 1 : 0.45;
+    label := Text {
+        text: root.text;
+        font-family: Theme.font;
+        font-size: 12px;
+        color: root.current ? Theme.bg-sidebar : Theme.text-primary;
+    }
+    ta := TouchArea {
+        enabled: root.enabled;
+        mouse-cursor: pointer;
+        clicked => { root.clicked(); }
+    }
+}
+
+export component Toggle inherits Rectangle {
+    in property <bool> checked;
+    in property <bool> enabled: true;
+    callback toggled(bool);
+    width: 46px;
+    height: 26px;
+    border-radius: 13px;
+    background: checked ? Theme.accent : Theme.border;
+    opacity: enabled ? 1 : 0.4;
+    Rectangle {
+        x: root.checked ? 22px : 2px;
+        y: 2px;
+        width: 22px;
+        height: 22px;
+        border-radius: 11px;
+        background: #ffffff;
+        animate x { duration: 120ms; }
+    }
+    TouchArea {
+        enabled: root.enabled;
+        mouse-cursor: pointer;
+        clicked => { root.toggled(!root.checked); }
+    }
+}
+
+// A labelled row with a switch on the right (ScrollPage toggle rows).
+export component ToggleRow inherits Rectangle {
+    in property <string> text;
+    in property <string> desc;
+    in property <bool> checked;
+    in property <bool> enabled: true;
+    callback toggled(bool);
+    height: desc == "" ? 52px : 64px;
+    border-radius: 12px;
+    background: Theme.bg-subtle;
+    VerticalLayout {
+        alignment: center;
+        x: 16px;
+        width: root.width - 100px;
+        spacing: 2px;
+        Txt { text: root.text; font-size: 13px; }
+        if root.desc != "": Txt { text: root.desc; font-size: 11px; color: Theme.text-secondary; wrap: word-wrap; }
+    }
+    Toggle {
+        x: root.width - self.width - 16px;
+        y: (root.height - self.height) / 2;
+        checked: root.checked;
+        enabled: root.enabled;
+        toggled(v) => { root.toggled(v); }
+    }
+}
+
+// WheelSafeSlider.qml: the mouse wheel never changes it (TouchArea ignores scroll events).
+export component SliderBar inherits Rectangle {
+    in property <float> value;
+    in property <float> minimum: 0;
+    in property <float> maximum: 100;
+    in property <float> step: 1;
+    in property <bool> enabled: true;
+    callback moved(float);
+    callback released(float);
+    property <bool> dragging;
+    property <float> drag-value;
+    property <float> shown: dragging ? drag-value : value;
+    property <float> frac: maximum > minimum ? Math.clamp((shown - minimum) / (maximum - minimum), 0, 1) : 0;
+    height: 28px;
+    opacity: enabled ? 1 : 0.4;
+    function from-x(x: length) -> float {
+        let f = Math.clamp((x - 9px) / (root.width - 18px), 0, 1);
+        return Math.round((root.minimum + f * (root.maximum - root.minimum)) / root.step) * root.step;
+    }
+    Rectangle {
+        x: 0;
+        y: (root.height - 4px) / 2;
+        height: 4px;
+        border-radius: 2px;
+        background: Theme.border;
+        Rectangle {
+            x: 0;
+            y: 0;
+            width: 9px + (root.width - 18px) * root.frac;
+            height: 4px;
+            border-radius: 2px;
+            background: Theme.accent;
+        }
+    }
+    Rectangle {
+        x: (root.width - 18px) * root.frac;
+        y: (root.height - 18px) / 2;
+        width: 18px;
+        height: 18px;
+        border-radius: 9px;
+        background: Theme.accent;
+        border-width: 2px;
+        border-color: Theme.bg-card;
+    }
+    TouchArea {
+        enabled: root.enabled;
+        mouse-cursor: pointer;
+        pointer-event(e) => {
+            if (e.button == PointerEventButton.left) {
+                if (e.kind == PointerEventKind.down) {
+                    root.dragging = true;
+                    root.drag-value = root.from-x(self.mouse-x);
+                    root.moved(root.drag-value);
+                } else if (e.kind == PointerEventKind.up) {
+                    root.dragging = false;
+                    root.released(root.drag-value);
+                }
+            }
+        }
+        moved => {
+            if (self.pressed) {
+                root.drag-value = root.from-x(self.mouse-x);
+                root.moved(root.drag-value);
+            }
+        }
+    }
+}
+
+export component Btn inherits Rectangle {
+    in property <string> text;
+    in property <bool> primary;
+    in property <bool> danger;
+    in property <bool> enabled: true;
+    callback clicked();
+    height: 34px;
+    width: l.preferred-width + 28px;
+    border-radius: 10px;
+    background: !enabled ? Theme.bg-subtle
+        : primary ? (ta.has-hover ? Theme.accent-hover : Theme.accent)
+        : danger ? (ta.has-hover ? Theme.danger : Theme.danger-bg)
+        : ta.has-hover ? Theme.bg-card-hover : Theme.bg-subtle;
+    border-width: primary ? 0px : 1px;
+    border-color: Theme.border;
+    opacity: enabled ? 1 : 0.5;
+    l := Text {
+        text: root.text;
+        font-family: Theme.font;
+        font-size: 12px;
+        font-weight: 600;
+        color: !root.enabled ? Theme.text-dim : root.primary ? Theme.bg-sidebar : Theme.text-primary;
+    }
+    ta := TouchArea {
+        enabled: root.enabled;
+        mouse-cursor: pointer;
+        clicked => { root.clicked(); }
+    }
+}
+
+// Rounded status pill (battery, connection, profile badge).
+export component Pill inherits Rectangle {
+    in property <string> text;
+    in property <color> tint;
+    in property <color> fill;
+    in property <image> icon;
+    in property <bool> has-icon;
+    in property <bool> chevron;
+    in property <bool> dot;
+    callback clicked();
+    height: 24px;
+    width: row.preferred-width + 20px;
+    border-radius: 12px;
+    background: fill;
+    row := HorizontalLayout {
+        padding-left: 10px;
+        padding-right: 10px;
+        spacing: 6px;
+        alignment: center;
+        if dot: Rectangle { width: 7px; height: 7px; border-radius: 4px; background: root.tint; y: (root.height - 7px) / 2; }
+        if has-icon: Image { source: root.icon; colorize: root.tint; width: 14px; height: 14px; y: (root.height - 14px) / 2; image-fit: contain; }
+        Text { text: root.text; color: root.tint; font-family: Theme.font; font-size: 11px; font-weight: 600; vertical-alignment: center; }
+        if chevron: Path {
+            width: 8px; height: 5px; y: (root.height - 5px) / 2;
+            viewbox-width: 8; viewbox-height: 5;
+            fill: root.tint;
+            commands: "M 0 0 L 8 0 L 4 5 Z";
+        }
+    }
+    TouchArea { mouse-cursor: pointer; clicked => { root.clicked(); } }
+}
+
+export component Card inherits Rectangle {
+    background: Theme.bg-card;
+    border-radius: 16px;
+    border-width: 1px;
+    border-color: Theme.border;
+}
+
+export component Dropdown inherits Rectangle {
+    in property <[string]> model;
+    in property <string> text;
+    callback picked(int);
+    height: 36px;
+    border-radius: 8px;
+    background: Theme.bg-input;
+    border-width: 1px;
+    border-color: ta.has-hover ? Theme.accent : Theme.border;
+    Txt { x: 12px; width: root.width - 36px; text: root.text; vertical-alignment: center; overflow: elide; }
+    Path { x: root.width - 20px; y: (root.height - 5px) / 2; width: 8px; height: 5px; viewbox-width: 8; viewbox-height: 5; fill: Theme.text-secondary; commands: "M 0 0 L 8 0 L 4 5 Z"; }
+    ta := TouchArea { mouse-cursor: pointer; clicked => { pop.show(); } }
+    pop := PopupWindow {
+        x: 0;
+        y: root.height + 2px;
+        width: root.width;
+        height: Math.min(root.model.length * 30px + 8px, 300px);
+        Rectangle {
+            background: Theme.bg-elevated;
+            border-radius: 8px;
+            border-width: 1px;
+            border-color: Theme.border;
+            ScrollView {
+                VerticalLayout {
+                    padding: 4px;
+                    for item[i] in root.model: Rectangle {
+                        height: 30px;
+                        border-radius: 6px;
+                        background: ia.has-hover ? Theme.accent-tint : transparent;
+                        Txt { x: 10px; width: parent.width - 20px; text: item; vertical-alignment: center; overflow: elide; color: ia.has-hover ? Theme.accent : Theme.text-primary; }
+                        ia := TouchArea { mouse-cursor: pointer; clicked => { root.picked(i); pop.close(); } }
+                    }
+                }
+            }
+        }
+    }
+}
+
+export component SectionLabel inherits Txt {
+    font-size: 11px;
+    font-weight: 600;
+    color: Theme.text-dim;
+}
+
+export component ChipRows inherits VerticalLayout {
+    in property <[ChipRow]> rows;
+    in property <bool> chips-enabled: true;
+    callback picked(string);
+    spacing: 8px;
+    for row in rows: VerticalLayout {
+        spacing: 6px;
+        if row.title != "": SectionLabel { text: row.title; }
+        HorizontalLayout {
+            spacing: 8px;
+            alignment: start;
+            for it in row.items: Chip {
+                text: it.label;
+                current: it.current;
+                enabled: root.chips-enabled;
+                clicked => { root.picked(it.id); }
+            }
+        }
+    }
+}
+

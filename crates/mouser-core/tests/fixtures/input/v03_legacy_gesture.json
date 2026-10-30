@@ -1,0 +1,48 @@
+{
+  "version": 3,
+  "active_profile": "default",
+  "profiles": {
+    "default": {
+      "label": "Default (All Apps)",
+      "mappings": {
+        "middle": "none",
+        "xbutton1": "alt_tab",
+        "xbutton2": "alt_tab",
+        "hscroll_left": "browser_back",
+        "hscroll_right": "browser_forward",
+        "gesture": "none",
+        "gesture_left": "app_switch",
+        "gesture_right": "none",
+        "gesture_up": "none",
+        "gesture_down": "none"
+      },
+      "apps": []
+    },
+    "Media": {
+      "label": "Media",
+      "apps": [
+        "wmplayer.exe",
+        "vlc.exe"
+      ],
+      "mappings": {
+        "middle": "play_pause",
+        "xbutton1": "alt_tab",
+        "xbutton2": "alt_tab",
+        "hscroll_left": "browser_back",
+        "hscroll_right": "browser_forward",
+        "gesture": "none",
+        "gesture_left": "app_switch",
+        "gesture_right": "none",
+        "gesture_up": "none",
+        "gesture_down": "none"
+      }
+    }
+  },
+  "settings": {
+    "start_minimized": true,
+    "start_with_windows": true,
+    "hscroll_threshold": 1,
+    "gesture_threshold": 33,
+    "dpi": 800
+  }
+}
